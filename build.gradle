@@ -1,0 +1,106 @@
+plugins {
+    id 'java-library'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version "$kotlinVersion"
+    id "com.jfrog.bintray" version "1.8.4"
+}
+
+group libraryGroup
+version libraryVersion
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+dependencies {
+    implementation "net.coobird:thumbnailator:$thumbnailatorVersion"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+gradlePlugin {
+    plugins {
+        iconDivvy {
+            id = libraryGroup
+            implementationClass = 'com.cyphercove.icondivvy.IconDivvyPlugin'
+        }
+    }
+}
+
+jar {
+    from project.sourceSets.main.output
+    baseName = libraryArtifact
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    archiveClassifier = 'sources'
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+
+publishing {
+    publications {
+        "$libraryArtifact"(MavenPublication) {
+            groupId = libraryGroup
+            artifactId = libraryArtifact
+            version = libraryVersion
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = libraryArtifact
+                description = libraryDescription
+                url = libraryUrl
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                organization {
+                    name = 'Cypher Cove'
+                    url = 'www.cyphercove.com'
+                }
+                scm {
+                    connection = 'scm:git:git@github.com:cyphercove/icondivvy.git'
+                    developerConnection = 'scm:git:git@cyphercove/icondivvy.git'
+                    url = libraryUrl
+                }
+            }
+        }
+    }
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    pkg {
+        repo = 'maven'
+        name = libraryArtifact
+        userOrg = 'cyphercove'
+        version {
+            name = libraryVersion
+            released  = new Date()
+        }
+        licenses = ['Apache-2.0']
+        vcsUrl = libraryUrl
+    }
+    publications = [libraryArtifact]
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
