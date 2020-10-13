@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/CypherCove/IconDivvy/master/img/banner.png"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/CypherCove/IconDivvy/main/img/banner.png"></p>
 ----
 
 IconDivvy is a Gradle plugin that converts a high-resolution raster source image into appropriate drawable resources 
