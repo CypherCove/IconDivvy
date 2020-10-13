@@ -1,7 +1,11 @@
-# IconDivvy
+<p align="center"><img src="https://raw.githubusercontent.com/CypherCove/IconDivvy/master/img/banner.png"></p>
+----
+
 IconDivvy is a Gradle plugin that converts a high-resolution raster source image into appropriate drawable resources 
-at various sizes and places them in their corresponding resource directories. The resized icons are generated using
+at various sizes and places them in their corresponding resource directories. The resized images are generated using
 [Thumbnailator](https://github.com/coobird/thumbnailator).
+
+![version](https://img.shields.io/badge/version-0.2-red)
 
 ## Usage
 
@@ -10,10 +14,10 @@ Add IconDivvy as a build script dependency:
 ```groovy
 buildscript {
     repositories {
-        mavenLocal()
+        jcenter()
     }
     dependencies {
-        classpath ("com.cyphercove.icondivvy:icondivvy:0.1")
+        classpath ("com.cyphercove.icondivvy:icondivvy:0.2")
     }
 }
 ```
@@ -39,6 +43,9 @@ iconDivvy {
 }
 ```
 
+Then run the Gradle task `divvyIcons` (located in the `build` group). There is also `divvyIconsLogOnly` task that can be
+run to preview which files will be written without actually writing them.
+
 Source high resolution images should be placed in a staging directory in the project. Each staging directory corresponds 
 with one job. Each job finds all the image files in the source staging directory, resizes it for all the different drawable
 densities, and places them in their appropriate places in the app resources.
@@ -47,9 +54,11 @@ Each job's name is used only for logging purposes. In the example above, there a
 "`launcherAdaptive`". There are separate jobs (and staging directories) because Android legacy and adaptive icon images
 have different sizes, and legacy icons should preferably be `mipmap` resources. 
 
-`sizeDip` is the size in pixels of the drawable at **mdpi** density. The image will be resized for each input density and
-placed in corresponding resource directories with the same file name as the source image file. By default, the densities
-**mdpi** through **xxxdpi** are produced. These can be customized with the `densities` property:
+`sizeDip` is the size in pixels of the drawable at **mdpi** density in Android density-independent-pixel units. If the 
+image is not square, its aspect ratio is preserved and `sizeDip` corresponds with the width. The image will be resized 
+for each input density and placed in corresponding resource directories with the same file name as the source image 
+file. By default, the densities **mdpi** through **xxxdpi** are produced. These can be customized with the `densities` 
+property:
 
 ```groovy
 iconDivvy {
@@ -87,3 +96,5 @@ IconDivvy is covered by the [Apache 2.0 license](LICENSE.md).
 IconDivvy uses [Thumbnailator](https://github.com/coobird/thumbnailator), covered by 
 [this license](https://github.com/coobird/thumbnailator/blob/master/LICENSE).
 
+The Android robot is reproduced or modified from work created and shared by Google and used according to terms described 
+in the [Creative Commons](https://creativecommons.org/licenses/by/3.0/) 3.0 Attribution License
