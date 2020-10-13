@@ -22,13 +22,18 @@ import org.gradle.api.Project
 
 internal const val TASK_GROUP = "build"
 internal const val PROJECT_EXTENSION = "iconDivvy"
-internal const val TASK_NAME = "divvyIcons"
+internal const val DIVVY_ICONS_TASK_NAME = "divvyIcons"
+internal const val DIVVY_ICONS_LOG_ONLY_TASK_NAME = "divvyIconsLogOnly"
 
 class IconDivvyPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(PROJECT_EXTENSION, IconDivvyExtension::class.java, project)
-        project.tasks.create(TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project.logger, extension.jobs) }
+        project.tasks.create(DIVVY_ICONS_TASK_NAME) { task ->
+            task.doLast { executeDivvyIcons(project.logger, extension.jobs, false) }
+            task.group = TASK_GROUP
+        }
+        project.tasks.create(DIVVY_ICONS_LOG_ONLY_TASK_NAME) { task ->
+            task.doLast { executeDivvyIcons(project.logger, extension.jobs, true) }
             task.group = TASK_GROUP
         }
     }

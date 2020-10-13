@@ -25,17 +25,20 @@ import javax.lang.model.SourceVersion
 import kotlin.math.round
 import kotlin.streams.toList
 
-fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>) {
+fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, logOnly: Boolean) {
+    if (logOnly){
+        logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
+    }
     jobs.forEach { config ->
         val job = config.name
         val source = config.stagingDir
         if (source == null) {
-            logger.error("sourceDir must be specified. Skipping job '$job'")
+            logger.warn("sourceDir must be specified. Job '$job' will not run.")
             return@forEach
         }
         val resourceDir = File(config.resourceDir)
         if (!resourceDir.isDirectory || resourceDir.name != "res") {
-            logger.error("The destResDir $resourceDir is invalid. Skipping job '$job'")
+            logger.warn("The destResDir $resourceDir is invalid. Job '$job' will not run.")
             return@forEach
         }
         val densities = config.densities.filter { density ->
@@ -43,28 +46,31 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>) {
                 .also { if (!it) logger.warn("Unknown density $density in job '$job' will be skipped.") }
         }
         if (densities.isEmpty()) {
-            logger.error("Job '$job' does not have any valid densities defined and will be skipped.")
+            logger.warn("Job '$job' does not have any valid densities defined and will be skipped.")
             return@forEach
         }
         if (!(config.resourceType == "drawable" || config.resourceType == "mipmap")) {
-            logger.error("The resourceType '${config.resourceType}' is invalid. Skipping job '$job'")
+            logger.warn("The resourceType '${config.resourceType}' is invalid. Job '$job' will not run.")
             return@forEach
         }
         if (config.sizeDip <= 0) {
-            logger.error("The sizeDip of ${config.sizeDip} is invalid. Skipping job '$job'")
+            logger.warn("The sizeDip of ${config.sizeDip} is invalid. Job '$job' will not run.")
             return@forEach
         }
         val sourceFiles = findSourceImageFiles(logger, job, File(source))
         if (sourceFiles.isEmpty()) {
-            logger.lifecycle("Job '$job' does not have any source image files.\n")
+            logger.lifecycle("Job '$job' does not have any source image files.")
             return@forEach
         }
-        val resDirectoryNames = densities.map { "'${config.resourceType}-$it'" }.joinToString(", ")
-        logger.lifecycle("Job '$job' is placing image(s) in resource directory `$resourceDir` directories\n  $resDirectoryNames:\n")
+        val resDirectoryNames = densities.map { "${config.resourceType}-$it" }.joinToString(", ")
+        logger.lifecycle("Job '$job' will place image(s) in the subdirectories of '$resourceDir'\n($resDirectoryNames):")
         sourceFiles.forEach { file ->
+            logger.lifecycle("    ${file.name}")
+            if (logOnly) {
+                return@forEach
+            }
             val sourceImage = ImageIO.read(file)
-            val sourceWidth = sourceImage.width
-            val sourceHeight = sourceImage.height
+            val heightScale = sourceImage.height.toFloat() / sourceImage.width.toFloat()
             for (density in densities) {
                 val outDir = File(resourceDir, "${config.resourceType}-$density")
                     .apply { mkdirs() }
@@ -72,15 +78,13 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>) {
                 val scale = scaleByDensity[density] ?: error("Failed to filter unknown density.")
                 if (config.overwriteExisting || !outFile.exists()) {
                     Thumbnails.of(sourceImage)
-                        .width(round(sourceWidth * scale).toInt())
-                        .height(round(sourceHeight * scale).toInt())
+                        .width(round( config.sizeDip * scale).toInt())
+                        .height(round(config.sizeDip * scale * heightScale).toInt())
                         .toFile(outFile)
                 }
             }
             sourceImage.flush()
-            logger.lifecycle("    ${file.name}")
         }
-        logger.lifecycle("\n")
     }
 }
 
@@ -89,7 +93,8 @@ private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: Fil
         .filter { path ->
             path.isImageFile &&
                     path.hasValidName.also {
-                        if (!it) logger.warn("File $path in job '$jobName' has an invalid resource name and will be skipped.")
+                        if (!it) logger.warn("File $path in job '$jobName' has an invalid resource name and will be skipped." +
+                                "Names must contain only lowercase a-z, 0-9, or underscore")
                     }
         }
         .toList()
@@ -100,7 +105,7 @@ private val Path.isImageFile: Boolean
     get() = fileName.toString().run { endsWith(".png") || endsWith(".jpg") || endsWith(".jpeg") }
 
 private val Path.hasValidName: Boolean
-    get() = SourceVersion.isIdentifier(fileName.toString().substringBeforeLast('.'))
+    get() = fileName.toString().substringBeforeLast('.').all { it == '_' || it.isDigit() || it.isLowerCase() }
 
 private val scaleByDensity = mapOf(
     "ldpi" to 0.75f,
