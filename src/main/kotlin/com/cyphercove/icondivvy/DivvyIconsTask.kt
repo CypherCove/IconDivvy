@@ -37,7 +37,7 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
             return@forEach
         }
         val resourceDir = File(config.resourceDir)
-        if (!resourceDir.isDirectory || resourceDir.name != "res") {
+        if (!resourceDir.isDirectory) {
             logger.warn("The destResDir $resourceDir is invalid. Job '$job' will not run.")
             return@forEach
         }
