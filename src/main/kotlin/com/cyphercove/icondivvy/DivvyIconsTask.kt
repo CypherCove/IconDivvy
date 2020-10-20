@@ -59,7 +59,7 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
         }
         val sourceFiles = findSourceImageFiles(logger, job, File(source))
         if (sourceFiles.isEmpty()) {
-            logger.lifecycle("Job '$job' does not have any source image files.")
+            logger.lifecycle("Job '$job' does not have any source image files or staging directory does not exist.")
             return@forEach
         }
         val resDirectoryNames = densities.map { "${config.resourceType}-$it" }.joinToString(", ")
@@ -89,6 +89,9 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
 }
 
 private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: File): List<File> {
+    if (!sourceDir.exists()) {
+        return emptyList()
+    }
     return Files.walk(sourceDir.absoluteFile.toPath(), 1)
         .filter { path ->
             path.isImageFile &&
