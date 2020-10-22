@@ -21,7 +21,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
-import javax.lang.model.SourceVersion
 import kotlin.math.round
 import kotlin.streams.toList
 
@@ -29,41 +28,44 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
     if (logOnly){
         logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
     }
-    jobs.forEach { config ->
+    jobs@for (config in jobs) {
         val job = config.name
+        val errorMsg = "Job '$job' will not run."
         val source = config.stagingDir
         if (source == null) {
-            logger.warn("sourceDir must be specified. Job '$job' will not run.")
-            return@forEach
+            logger.warn("sourceDir must be specified. $errorMsg")
+            continue
         }
         val resourceDir = File(config.resourceDir)
         if (!resourceDir.isDirectory) {
-            logger.warn("The destResDir $resourceDir is invalid. Job '$job' will not run.")
-            return@forEach
+            logger.warn("The destResDir $resourceDir is invalid. $errorMsg")
+            continue
         }
-        val densities = config.densities.filter { density ->
-            (density in scaleByDensity.keys)
-                .also { if (!it) logger.warn("Unknown density $density in job '$job' will be skipped.") }
+        for (density in config.densities) {
+            if (density !in SCALE_BY_DENSITY.keys) {
+                logger.warn("Unknown density $density. $errorMsg")
+                continue@jobs
+            }
         }
-        if (densities.isEmpty()) {
-            logger.warn("Job '$job' does not have any valid densities defined and will be skipped.")
-            return@forEach
+        if (config.densities.isEmpty()) {
+            logger.warn("No densities provided. $errorMsg")
+            continue
         }
-        if (!(config.resourceType == "drawable" || config.resourceType == "mipmap")) {
-            logger.warn("The resourceType '${config.resourceType}' is invalid. Job '$job' will not run.")
-            return@forEach
+        if (config.resourceType !in RESOURCE_TYPES) {
+            logger.warn("The resourceType '${config.resourceType}' is invalid. $errorMsg")
+            continue
         }
         if (config.sizeDip <= 0) {
-            logger.warn("The sizeDip of ${config.sizeDip} is invalid. Job '$job' will not run.")
-            return@forEach
+            logger.warn("The sizeDip of ${config.sizeDip} is invalid. $errorMsg")
+            continue
         }
         val sourceFiles = findSourceImageFiles(logger, job, File(source))
         if (sourceFiles.isEmpty()) {
             logger.lifecycle("Job '$job' does not have any source image files or staging directory does not exist.")
-            return@forEach
+            continue
         }
-        val resDirectoryNames = densities.map { "${config.resourceType}-$it" }.joinToString(", ")
-        logger.lifecycle("Job '$job' will place image(s) in the subdirectories of '$resourceDir'\n($resDirectoryNames):")
+        val resDirectoryNames = config.densities.joinToString(", ") { "${config.resourceType}-$it" }
+        logger.lifecycle("Job '$job' will place the following image(s) in the subdirectories of '$resourceDir'\n($resDirectoryNames):")
         sourceFiles.forEach { file ->
             logger.lifecycle("    ${file.name}")
             if (logOnly) {
@@ -71,11 +73,11 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
             }
             val sourceImage = ImageIO.read(file)
             val heightScale = sourceImage.height.toFloat() / sourceImage.width.toFloat()
-            for (density in densities) {
+            for (density in config.densities) {
                 val outDir = File(resourceDir, "${config.resourceType}-$density")
                     .apply { mkdirs() }
                 val outFile = File(outDir, file.name)
-                val scale = scaleByDensity[density] ?: error("Failed to filter unknown density.")
+                val scale = SCALE_BY_DENSITY[density] ?: error("Unknown density $density.")
                 if (config.overwriteExisting || !outFile.exists()) {
                     Thumbnails.of(sourceImage)
                         .width(round( config.sizeDip * scale).toInt())
@@ -110,7 +112,7 @@ private val Path.isImageFile: Boolean
 private val Path.hasValidName: Boolean
     get() = fileName.toString().substringBeforeLast('.').all { it == '_' || it.isDigit() || it.isLowerCase() }
 
-private val scaleByDensity = mapOf(
+private val SCALE_BY_DENSITY = mapOf(
     "ldpi" to 0.75f,
     "mdpi" to 1f,
     "hdpi" to 1.5f,
@@ -118,3 +120,5 @@ private val scaleByDensity = mapOf(
     "xxhdpi" to 3f,
     "xxxhdpi" to 4f
 )
+
+private val RESOURCE_TYPES = listOf("drawable", "mipmap")
