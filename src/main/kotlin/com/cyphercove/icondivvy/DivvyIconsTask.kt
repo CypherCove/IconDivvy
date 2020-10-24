@@ -25,10 +25,10 @@ import kotlin.math.round
 import kotlin.streams.toList
 
 fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, logOnly: Boolean) {
-    if (logOnly){
+    if (logOnly) {
         logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
     }
-    jobs@for (config in jobs) {
+    jobs@ for (config in jobs) {
         val job = config.name
         val errorMsg = "Job '$job' will not run."
         val source = config.stagingDir
@@ -60,6 +60,10 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
             continue
         }
         val sourceFiles = findSourceImageFiles(logger, job, File(source))
+        if (sourceFiles == null) {
+            logger.warn(errorMsg)
+            continue
+        }
         if (sourceFiles.isEmpty()) {
             logger.lifecycle("Job '$job' does not have any source image files or staging directory does not exist.")
             continue
@@ -80,7 +84,7 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
                 val scale = SCALE_BY_DENSITY[density] ?: error("Unknown density $density.")
                 if (config.overwriteExisting || !outFile.exists()) {
                     Thumbnails.of(sourceImage)
-                        .width(round( config.sizeDip * scale).toInt())
+                        .width(round(config.sizeDip * scale).toInt())
                         .height(round(config.sizeDip * scale * heightScale).toInt())
                         .toFile(outFile)
                 }
@@ -90,19 +94,21 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
     }
 }
 
-private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: File): List<File> {
+private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: File): List<File>? {
     if (!sourceDir.exists()) {
         return emptyList()
     }
     return Files.walk(sourceDir.absoluteFile.toPath(), 1)
-        .filter { path ->
-            path.isImageFile &&
-                    path.hasValidName.also {
-                        if (!it) logger.warn("File $path in job '$jobName' has an invalid resource name and will be skipped." +
-                                "Names must contain only lowercase a-z, 0-9, or underscore")
-                    }
-        }
         .toList()
+        .filter(Path::isImageFile)
+        .onEach { path ->
+            if (!path.hasValidName) {
+                logger.warn(
+                    "File $path in job '$jobName' has an invalid resource name and will be skipped." +
+                            "Names must contain only lowercase a-z, 0-9, or underscore, and must not be a Java keyword.")
+                return null
+            }
+        }
         .map(Path::toFile)
 }
 
@@ -110,7 +116,10 @@ private val Path.isImageFile: Boolean
     get() = fileName.toString().run { endsWith(".png") || endsWith(".jpg") || endsWith(".jpeg") }
 
 private val Path.hasValidName: Boolean
-    get() = fileName.toString().substringBeforeLast('.').all { it == '_' || it.isDigit() || it.isLowerCase() }
+    get() = fileName.toString().let {
+        it.substringBeforeLast('.').all { it == '_' || it.isDigit() || it.isLowerCase() } &&
+                it !in JAVA_KEYWORDS
+    }
 
 private val SCALE_BY_DENSITY = mapOf(
     "ldpi" to 0.75f,
@@ -122,3 +131,12 @@ private val SCALE_BY_DENSITY = mapOf(
 )
 
 private val RESOURCE_TYPES = listOf("drawable", "mipmap")
+
+private val JAVA_KEYWORDS = """
+abstract assert boolean break byte case catch char class const continue
+default do double else enum extends final finally float for goto if
+implements import instanceof int interface long native new package
+private protected public return short static strictfp super switch
+synchronized this throw throws transient try void volatile while 
+""".trim().split(" ", "\n")
+

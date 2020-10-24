@@ -6,7 +6,7 @@ IconDivvy is a Gradle plugin that converts a high-resolution raster source image
 resources at various sizes and places them in their corresponding resource directories. The resized images are generated 
 using [Thumbnailator](https://github.com/coobird/thumbnailator).
 
-![version](https://img.shields.io/badge/version-0.4-red)
+![version](https://img.shields.io/badge/version-0.5-red)
 
 ## Usage
 
@@ -18,7 +18,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath ("com.cyphercove.icondivvy:icondivvy:0.4")
+        classpath ("com.cyphercove.icondivvy:icondivvy:0.5")
     }
 }
 ```
