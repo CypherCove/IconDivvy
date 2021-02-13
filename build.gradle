@@ -3,14 +3,12 @@ plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
     id 'org.jetbrains.kotlin.jvm' version "$kotlinVersion"
-    id "com.jfrog.bintray" version "1.8.4"
 }
 
 group libraryGroup
 version libraryVersion
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
@@ -80,23 +78,6 @@ publishing {
             }
         }
     }
-}
-
-bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_KEY')
-    pkg {
-        repo = 'maven'
-        name = libraryArtifact
-        userOrg = 'cyphercove'
-        version {
-            name = libraryVersion
-            released  = new Date()
-        }
-        licenses = ['Apache-2.0']
-        vcsUrl = libraryUrl
-    }
-    publications = [libraryArtifact]
 }
 
 javadoc {
