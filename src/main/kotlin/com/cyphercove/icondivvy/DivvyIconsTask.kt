@@ -22,6 +22,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
 import kotlin.math.round
+import kotlin.streams.asSequence
 import kotlin.streams.toList
 
 fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, logOnly: Boolean) {
@@ -60,12 +61,8 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
             continue
         }
         val sourceFiles = findSourceImageFiles(logger, job, File(source))
-        if (sourceFiles == null) {
-            logger.warn(errorMsg)
-            continue
-        }
         if (sourceFiles.isEmpty()) {
-            logger.lifecycle("Job '$job' does not have any source image files or staging directory does not exist.")
+            logger.lifecycle("Job '$job' does not have any valid source image files or staging directory does not exist.")
             continue
         }
         val resDirectoryNames = config.densities.joinToString(", ") { "${config.resourceType}-$it" }
@@ -94,31 +91,33 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
     }
 }
 
-private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: File): List<File>? {
+private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: File): List<File> {
     if (!sourceDir.exists()) {
         return emptyList()
     }
     return Files.walk(sourceDir.absoluteFile.toPath(), 1)
-        .toList()
+        .asSequence()
         .filter(Path::isImageFile)
-        .onEach { path ->
-            if (!path.hasValidName) {
-                logger.warn(
-                    "File $path in job '$jobName' has an invalid resource name and will be skipped." +
-                            "Names must contain only lowercase a-z, 0-9, or underscore, and must not be a Java keyword.")
-                return null
+        .filter { path ->
+            path.hasValidName.also {
+                if (!it) {
+                    logger.warn(
+                        "File $path in job '$jobName' has an invalid resource name and will be skipped." +
+                                "Names must contain only lowercase a-z, 0-9, or underscore, and must not be a Java keyword.")
+                }
             }
         }
         .map(Path::toFile)
+        .toList()
 }
 
 private val Path.isImageFile: Boolean
     get() = fileName.toString().run { endsWith(".png") || endsWith(".jpg") || endsWith(".jpeg") }
 
 private val Path.hasValidName: Boolean
-    get() = fileName.toString().let {
-        it.substringBeforeLast('.').all { it == '_' || it.isDigit() || it.isLowerCase() } &&
-                it !in JAVA_KEYWORDS
+    get() = fileName.toString().substringBeforeLast('.').let { name ->
+        name.all { it == '_' || it.isDigit() || it.isLowerCase() } &&
+                name !in JAVA_KEYWORDS
     }
 
 private val SCALE_BY_DENSITY = mapOf(
