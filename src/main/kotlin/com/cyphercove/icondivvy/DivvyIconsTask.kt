@@ -16,6 +16,7 @@
 package com.cyphercove.icondivvy
 
 import net.coobird.thumbnailator.Thumbnails
+import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import java.io.File
 import java.nio.file.Files
@@ -25,7 +26,8 @@ import kotlin.math.round
 import kotlin.streams.asSequence
 import kotlin.streams.toList
 
-fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, logOnly: Boolean) {
+fun executeDivvyIcons(project: Project, jobs: Iterable<DivvyJobConfiguration>, logOnly: Boolean) {
+    val logger = project.logger
     if (logOnly) {
         logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
     }
@@ -37,7 +39,7 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
             logger.warn("sourceDir must be specified. $errorMsg")
             continue
         }
-        val resourceDir = File(config.resourceDir)
+        val resourceDir = File(project.projectDir, config.resourceDir)
         if (!resourceDir.isDirectory) {
             logger.warn("The destResDir $resourceDir is invalid. $errorMsg")
             continue
@@ -60,7 +62,7 @@ fun executeDivvyIcons(logger: Logger, jobs: Iterable<DivvyJobConfiguration>, log
             logger.warn("The sizeDip of ${config.sizeDip} is invalid. $errorMsg")
             continue
         }
-        val sourceFiles = findSourceImageFiles(logger, job, File(source))
+        val sourceFiles = findSourceImageFiles(logger, job, File(project.projectDir, source))
         if (sourceFiles.isEmpty()) {
             logger.lifecycle("Job '$job' does not have any valid source image files or staging directory does not exist.")
             continue

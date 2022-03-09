@@ -29,11 +29,11 @@ class IconDivvyPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(PROJECT_EXTENSION, IconDivvyExtension::class.java, project)
         project.tasks.create(DIVVY_ICONS_TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project.logger, extension.jobs, false) }
+            task.doLast { executeDivvyIcons(project, extension.jobs, false) }
             task.group = TASK_GROUP
         }
         project.tasks.create(DIVVY_ICONS_LOG_ONLY_TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project.logger, extension.jobs, true) }
+            task.doLast { executeDivvyIcons(project, extension.jobs, true) }
             task.group = TASK_GROUP
         }
     }
