@@ -29,20 +29,20 @@ class IconDivvyPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(PROJECT_EXTENSION, IconDivvyExtension::class.java, project)
         project.tasks.create(DIVVY_ICONS_TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project, extension.jobs, false) }
+            task.doLast { executeRasterJobs(project, extension.rasterJobs, false) }
             task.group = TASK_GROUP
         }
         project.tasks.create(DIVVY_ICONS_LOG_ONLY_TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project, extension.jobs, true) }
+            task.doLast { executeRasterJobs(project, extension.rasterJobs, true) }
             task.group = TASK_GROUP
         }
     }
 }
 
 open class IconDivvyExtension(project: Project) {
-    val jobs: NamedDomainObjectContainer<DivvyJobConfiguration> = project.container(DivvyJobConfiguration::class.java)
+    val rasterJobs: NamedDomainObjectContainer<RasterJobConfiguration> = project.container(RasterJobConfiguration::class.java)
 
-    fun jobs(config: Closure<Unit>) {
-        jobs.configure(config)
+    fun rasterJobs(config: Closure<Unit>) {
+        rasterJobs.configure(config)
     }
 }

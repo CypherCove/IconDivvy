@@ -17,20 +17,26 @@ package com.cyphercove.icondivvy
 
 import net.coobird.thumbnailator.Thumbnails
 import org.gradle.api.Project
-import org.gradle.api.logging.Logger
 import java.io.File
-import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
 import kotlin.math.round
-import kotlin.streams.asSequence
-import kotlin.streams.toList
 
-fun executeDivvyIcons(project: Project, jobs: Iterable<DivvyJobConfiguration>, logOnly: Boolean) {
+open class RasterJobConfiguration(val name: String) {
+    var stagingDir: String? = null
+    var resourceDir: String = "app/src/main/res"
+    var resourceType: String = "drawable"
+    var sizeDip: Int = 48
+    var densities: List<String> = listOf("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi")
+    var overwriteExisting: Boolean = true
+}
+
+fun executeRasterJobs(project: Project, jobs: Iterable<RasterJobConfiguration>, logOnly: Boolean) {
     val logger = project.logger
     if (logOnly) {
         logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
     }
+
     jobs@ for (config in jobs) {
         val job = config.name
         val errorMsg = "Job '$job' will not run."
@@ -62,7 +68,7 @@ fun executeDivvyIcons(project: Project, jobs: Iterable<DivvyJobConfiguration>, l
             logger.warn("The sizeDip of ${config.sizeDip} is invalid. $errorMsg")
             continue
         }
-        val sourceFiles = findSourceImageFiles(logger, job, File(project.projectDir, source))
+        val sourceFiles = findSourceFiles(logger, job, File(project.projectDir, source), Path::isRasterImageFile)
         if (sourceFiles.isEmpty()) {
             logger.lifecycle("Job '$job' does not have any valid source image files or staging directory does not exist.")
             continue
@@ -93,35 +99,6 @@ fun executeDivvyIcons(project: Project, jobs: Iterable<DivvyJobConfiguration>, l
     }
 }
 
-private fun findSourceImageFiles(logger: Logger, jobName: String, sourceDir: File): List<File> {
-    if (!sourceDir.exists()) {
-        return emptyList()
-    }
-    return Files.walk(sourceDir.absoluteFile.toPath(), 1)
-        .asSequence()
-        .filter(Path::isImageFile)
-        .filter { path ->
-            path.hasValidName.also {
-                if (!it) {
-                    logger.warn(
-                        "File $path in job '$jobName' has an invalid resource name and will be skipped." +
-                                "Names must contain only lowercase a-z, 0-9, or underscore, and must not be a Java keyword.")
-                }
-            }
-        }
-        .map(Path::toFile)
-        .toList()
-}
-
-private val Path.isImageFile: Boolean
-    get() = fileName.toString().run { endsWith(".png") || endsWith(".jpg") || endsWith(".jpeg") }
-
-private val Path.hasValidName: Boolean
-    get() = fileName.toString().substringBeforeLast('.').let { name ->
-        name.all { it == '_' || it.isDigit() || it.isLowerCase() } &&
-                name !in JAVA_KEYWORDS
-    }
-
 private val SCALE_BY_DENSITY = mapOf(
     "ldpi" to 0.75f,
     "mdpi" to 1f,
@@ -132,12 +109,3 @@ private val SCALE_BY_DENSITY = mapOf(
 )
 
 private val RESOURCE_TYPES = listOf("drawable", "mipmap")
-
-private val JAVA_KEYWORDS = """
-abstract assert boolean break byte case catch char class const continue
-default do double else enum extends final finally float for goto if
-implements import instanceof int interface long native new package
-private protected public return short static strictfp super switch
-synchronized this throw throws transient try void volatile while 
-""".trim().split(" ", "\n")
-

@@ -11,6 +11,8 @@ version libraryVersion
 
 repositories {
     mavenCentral()
+    mavenLocal() // TODO remove
+    maven { url 'https://jitpack.io' }
 }
 
 compileKotlin {
@@ -21,6 +23,7 @@ compileKotlin {
 
 dependencies {
     implementation "net.coobird:thumbnailator:$thumbnailatorVersion"
+    implementation "io.github.14v:svg-non-stop:$svgNonStopVersion"
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
