@@ -3,6 +3,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
     id 'org.jetbrains.kotlin.jvm' version "$kotlinVersion"
+    id 'com.gradle.plugin-publish' version '0.18.0'
 }
 
 group libraryGroup
@@ -23,10 +24,18 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
+pluginBundle {
+    website = libraryWebsite
+    vcsUrl = libraryWebsite
+    tags = ['android', 'android svg', 'android vector', 'android icon']
+}
+
 gradlePlugin {
     plugins {
         iconDivvy {
             id = libraryGroup
+            displayName = libraryDisplayName
+            description = libraryDescription
             implementationClass = 'com.cyphercove.icondivvy.IconDivvyPlugin'
         }
     }
@@ -34,54 +43,41 @@ gradlePlugin {
 
 jar {
     from project.sourceSets.main.output
-    baseName = libraryArtifact
+    archiveBaseName.set(libraryArtifact)
 }
 
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allSource
-    archiveClassifier = 'sources'
-}
-
-task javadocJar(type: Jar) {
-    from javadoc
-    archiveClassifier = 'javadoc'
+java {
+    withJavadocJar()
+    withSourcesJar()
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
 }
 
 publishing {
     publications {
         "$libraryArtifact"(MavenPublication) {
-            groupId = libraryGroup
             artifactId = libraryArtifact
-            version = libraryVersion
             from components.java
-            artifact sourcesJar
-            artifact javadocJar
             pom {
                 name = libraryArtifact
                 description = libraryDescription
                 url = libraryUrl
                 licenses {
                     license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
                     }
                 }
                 organization {
-                    name = 'Cypher Cove'
-                    url = 'www.cyphercove.com'
+                    name.set("Cypher Cove")
+                    url.set("www.cyphercove.com")
                 }
                 scm {
-                    connection = 'scm:git:git@github.com:cyphercove/icondivvy.git'
-                    developerConnection = 'scm:git:git@cyphercove/icondivvy.git'
-                    url = libraryUrl
+                    connection.set("scm:git:git@github.com:cyphercove/icondivvy.git")
+                    developerConnection.set("scm:git:git@cyphercove/icondivvy.git")
+                    url.set(libraryUrl)
                 }
             }
         }
-    }
-}
-
-javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
     }
 }
