@@ -29,14 +29,20 @@ class IconDivvyPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(PROJECT_EXTENSION, IconDivvyExtension::class.java, project)
         project.tasks.create(DIVVY_ICONS_TASK_NAME) { task ->
-            task.doLast { executeRasterJobs(project, extension.rasterJobs, false) }
+            task.doLast {
+                executeRasterJobs(project, extension.rasterJobs, false)
+            }
             task.group = TASK_GROUP
         }
         project.tasks.create(DIVVY_ICONS_LOG_ONLY_TASK_NAME) { task ->
-            task.doLast { executeRasterJobs(project, extension.rasterJobs, true) }
+            task.doLast {
+                project.logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
+                executeRasterJobs(project, extension.rasterJobs, true)
+            }
             task.group = TASK_GROUP
         }
     }
+
 }
 
 open class IconDivvyExtension(project: Project) {

@@ -22,59 +22,45 @@ import java.nio.file.Path
 import javax.imageio.ImageIO
 import kotlin.math.round
 
-open class RasterJobConfiguration(val name: String) {
-    var stagingDir: String? = null
-    var resourceDir: String = "app/src/main/res"
-    var resourceType: String = "drawable"
+class RasterJobConfiguration(name: String): ResourceBatchJobConfiguration(name) {
     var sizeDip: Int = 48
     var densities: List<String> = listOf("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi")
-    var overwriteExisting: Boolean = true
+
+    override fun validate(project: Project, config: ResourceBatchJobConfiguration): Result<ResourceBatchJobParams> {
+        for (density in densities) {
+            if (density !in SCALE_BY_DENSITY.keys) {
+                return failureMessage("Unknown density $density.")
+            }
+        }
+        if (densities.isEmpty()) {
+            return failureMessage("No densities provided.")
+        }
+        if (sizeDip <= 0) {
+            return failureMessage("The sizeDip of $sizeDip is invalid.")
+        }
+        return super.validate(project, config)
+    }
 }
 
 fun executeRasterJobs(project: Project, jobs: Iterable<RasterJobConfiguration>, logOnly: Boolean) {
     val logger = project.logger
-    if (logOnly) {
-        logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
-    }
 
     jobs@ for (config in jobs) {
         val job = config.name
-        val errorMsg = "Job '$job' will not run."
-        val source = config.stagingDir
-        if (source == null) {
-            logger.warn("sourceDir must be specified. $errorMsg")
-            continue
-        }
-        val resourceDir = File(project.projectDir, config.resourceDir)
-        if (!resourceDir.isDirectory) {
-            logger.warn("The destResDir $resourceDir is invalid. $errorMsg")
-            continue
-        }
-        for (density in config.densities) {
-            if (density !in SCALE_BY_DENSITY.keys) {
-                logger.warn("Unknown density $density. $errorMsg")
-                continue@jobs
-            }
-        }
-        if (config.densities.isEmpty()) {
-            logger.warn("No densities provided. $errorMsg")
-            continue
-        }
-        if (config.resourceType !in RESOURCE_TYPES) {
-            logger.warn("The resourceType '${config.resourceType}' is invalid. $errorMsg")
-            continue
-        }
-        if (config.sizeDip <= 0) {
-            logger.warn("The sizeDip of ${config.sizeDip} is invalid. $errorMsg")
-            continue
-        }
-        val sourceFiles = findSourceFiles(logger, job, File(project.projectDir, source), Path::isRasterImageFile)
+        val errorMsg = "Raster job '$job' will not run."
+
+        val (sourceDir, resourceDir) = config.validate(project, config)
+            .onFailure { logger.warn("{it.message} $errorMsg") }
+            .getOrNull() ?: continue@jobs
+
+        val sourceFiles = findSourceFiles(logger, job, sourceDir, Path::isRasterImageFile)
         if (sourceFiles.isEmpty()) {
             logger.lifecycle("Job '$job' does not have any valid source image files or staging directory does not exist.")
             continue
         }
+
         val resDirectoryNames = config.densities.joinToString(", ") { "${config.resourceType}-$it" }
-        logger.lifecycle("Job '$job' will place the following image(s) in the subdirectories of '$resourceDir'\n($resDirectoryNames):")
+        logger.lifecycle("Raster job '$job' will place the following image(s) in the subdirectories of '$resourceDir'\n($resDirectoryNames):")
         sourceFiles.forEach { file ->
             logger.lifecycle("    ${file.name}")
             if (logOnly) {
@@ -107,5 +93,3 @@ private val SCALE_BY_DENSITY = mapOf(
     "xxhdpi" to 3f,
     "xxxhdpi" to 4f
 )
-
-private val RESOURCE_TYPES = listOf("drawable", "mipmap")

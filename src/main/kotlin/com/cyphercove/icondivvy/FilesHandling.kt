@@ -53,7 +53,7 @@ internal fun findSourceFiles(logger: Logger, jobName: String, sourceDir: File, f
                 if (!it) {
                     logger.warn(
                         "File $path in job '$jobName' has an invalid resource name and will be skipped." +
-                                "Names must contain only lowercase a-z, 0-9, or underscore, and must not be a Java keyword.")
+                                "\n    Names must contain only lowercase a-z, 0-9, or underscore, and must not be a Java keyword.")
                 }
             }
         }
