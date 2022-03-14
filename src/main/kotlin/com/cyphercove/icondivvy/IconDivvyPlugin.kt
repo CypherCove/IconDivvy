@@ -31,6 +31,7 @@ class IconDivvyPlugin : Plugin<Project> {
         project.tasks.create(DIVVY_ICONS_TASK_NAME) { task ->
             task.doLast {
                 executeRasterJobs(project, extension.rasterJobs, false)
+                executeVectorJobs(project, extension.vectorJobs, false)
             }
             task.group = TASK_GROUP
         }
@@ -38,6 +39,7 @@ class IconDivvyPlugin : Plugin<Project> {
             task.doLast {
                 project.logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
                 executeRasterJobs(project, extension.rasterJobs, true)
+                executeVectorJobs(project, extension.vectorJobs, true)
             }
             task.group = TASK_GROUP
         }
@@ -46,9 +48,17 @@ class IconDivvyPlugin : Plugin<Project> {
 }
 
 open class IconDivvyExtension(project: Project) {
-    val rasterJobs: NamedDomainObjectContainer<RasterJobConfiguration> = project.container(RasterJobConfiguration::class.java)
+    val rasterJobs: NamedDomainObjectContainer<RasterJobConfiguration> =
+        project.container(RasterJobConfiguration::class.java)
 
     fun rasterJobs(config: Closure<Unit>) {
         rasterJobs.configure(config)
+    }
+
+    val vectorJobs: NamedDomainObjectContainer<VectorJobConfiguration> =
+        project.container(VectorJobConfiguration::class.java)
+
+    fun vectorJobs(config: Closure<Unit>) {
+        vectorJobs.configure(config)
     }
 }

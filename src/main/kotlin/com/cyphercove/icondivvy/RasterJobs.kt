@@ -55,16 +55,16 @@ fun executeRasterJobs(project: Project, jobs: Iterable<RasterJobConfiguration>, 
 
         val sourceFiles = findSourceFiles(logger, job, sourceDir, Path::isRasterImageFile)
         if (sourceFiles.isEmpty()) {
-            logger.lifecycle("Job '$job' does not have any valid source image files or staging directory does not exist.")
+            logger.lifecycle("Raster job '$job' does not have any valid source image files or staging directory does not exist.")
             continue
         }
 
         val resDirectoryNames = config.densities.joinToString(", ") { "${config.resourceType}-$it" }
         logger.lifecycle("Raster job '$job' will place the following image(s) in the subdirectories of '$resourceDir'\n($resDirectoryNames):")
-        sourceFiles.forEach { file ->
+        for (file in sourceFiles) {
             logger.lifecycle("    ${file.name}")
             if (logOnly) {
-                return@forEach
+                continue
             }
             val sourceImage = ImageIO.read(file)
             val heightScale = sourceImage.height.toFloat() / sourceImage.width.toFloat()
