@@ -47,10 +47,9 @@ fun executeRasterJobs(project: Project, jobs: Iterable<RasterJobConfiguration>, 
 
     jobs@ for (config in jobs) {
         val job = config.name
-        val errorMsg = "Raster job '$job' will not run."
 
         val (sourceDir, resourceDir) = config.validate(project, config)
-            .onFailure { logger.warn("{it.message} $errorMsg") }
+            .onFailure { logger.warn("${it.message} Raster job '$job' will not run.") }
             .getOrNull() ?: continue@jobs
 
         val sourceFiles = findSourceFiles(logger, job, sourceDir, Path::isRasterImageFile)
