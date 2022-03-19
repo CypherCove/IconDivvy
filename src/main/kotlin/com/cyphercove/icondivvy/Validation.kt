@@ -15,11 +15,4 @@
  ******************************************************************************/
 package com.cyphercove.icondivvy
 
-open class DivvyJobConfiguration(val name: String) {
-    var stagingDir: String? = null
-    var resourceDir: String = "app/src/main/res"
-    var resourceType: String = "drawable"
-    var sizeDip: Int = 48
-    var densities: List<String> = listOf("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi")
-    var overwriteExisting: Boolean = true
-}
+internal fun <T> failureMessage(message: String) = Result.failure<T>(Throwable(message))

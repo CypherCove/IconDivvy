@@ -29,20 +29,36 @@ class IconDivvyPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(PROJECT_EXTENSION, IconDivvyExtension::class.java, project)
         project.tasks.create(DIVVY_ICONS_TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project, extension.jobs, false) }
+            task.doLast {
+                executeRasterJobs(project, extension.rasterJobs, false)
+                executeVectorJobs(project, extension.vectorJobs, false)
+            }
             task.group = TASK_GROUP
         }
         project.tasks.create(DIVVY_ICONS_LOG_ONLY_TASK_NAME) { task ->
-            task.doLast { executeDivvyIcons(project, extension.jobs, true) }
+            task.doLast {
+                project.logger.lifecycle("Running IconDivvy in 'logOnly' mode. No files will be written.")
+                executeRasterJobs(project, extension.rasterJobs, true)
+                executeVectorJobs(project, extension.vectorJobs, true)
+            }
             task.group = TASK_GROUP
         }
     }
+
 }
 
 open class IconDivvyExtension(project: Project) {
-    val jobs: NamedDomainObjectContainer<DivvyJobConfiguration> = project.container(DivvyJobConfiguration::class.java)
+    val rasterJobs: NamedDomainObjectContainer<RasterJobConfiguration> =
+        project.container(RasterJobConfiguration::class.java)
 
-    fun jobs(config: Closure<Unit>) {
-        jobs.configure(config)
+    fun rasterJobs(config: Closure<Unit>) {
+        rasterJobs.configure(config)
+    }
+
+    val vectorJobs: NamedDomainObjectContainer<VectorJobConfiguration> =
+        project.container(VectorJobConfiguration::class.java)
+
+    fun vectorJobs(config: Closure<Unit>) {
+        vectorJobs.configure(config)
     }
 }
