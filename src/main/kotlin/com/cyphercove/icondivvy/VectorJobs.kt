@@ -16,7 +16,7 @@
 package com.cyphercove.icondivvy
 
 import com.android.ide.common.vectordrawable.Svg2Vector
-import io.github.fourteenv.NonStop
+import io.github.fourteenv.clone.NonStop
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import java.io.File

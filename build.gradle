@@ -12,7 +12,6 @@ version libraryVersion
 repositories {
     mavenCentral()
     google()
-    maven { url 'https://jitpack.io' }
 }
 
 compileKotlin {
@@ -23,7 +22,6 @@ compileKotlin {
 
 dependencies {
     implementation "net.coobird:thumbnailator:$thumbnailatorVersion"
-    implementation "com.github.cypherdare:svg-non-stop:6e841b24d4f7c11da917e91ac4368c81d497e038"
     implementation "com.android.tools:sdk-common:$androidToolsVersion"
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
